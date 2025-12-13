@@ -21,6 +21,16 @@
       loading.value = false
     }
   })
+
+  function toggleTodo(id: number) {
+    todos.value = todos.value.map(t => 
+      t.id === id ? { ...t, completed: !t.completed } : t
+    )
+  }
+
+  function deleteTodo(id: number) {
+    todos.value = todos.value.filter(t => t.id !== id)
+  }
 </script>
 
 <template>
@@ -28,8 +38,19 @@
     <h1>Todos</h1>
     <div v-if="loading">Loading...</div>
     <ul v-else>
-      <li v-for="todo in todos" :key="todo.id">
+      
+      <li 
+      v-for="todo in todos" 
+      :key="todo.id" 
+      :class="{ completed: todo.completed }">
+        
+      <input type="checkbox" 
+        :checked="todo.completed" 
+        @change="toggleTodo(todo.id)">
         {{ todo.title }}
+      
+        <button @click="deleteTodo(todo.id)">×</button>
+      
       </li>
     </ul>
   </div>
@@ -38,5 +59,8 @@
 <style>
   ul {
     list-style-type: none;
+  }
+  .completed {
+    font-weight: bold;
   }
 </style>
