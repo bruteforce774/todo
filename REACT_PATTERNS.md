@@ -694,3 +694,553 @@ return (
 7. **Hooks must be top-level** - same order every render
 
 The patterns may feel verbose initially, but they make React's behavior explicit and predictable.
+
+---
+
+## 11. LocalStorage Integration
+
+Based on the frameworkless implementation (frameworkless:js/app.js), here's how to adapt it for Vue/React.
+
+### Frameworkless Pattern (frameworkless:js/app.js:6-10, 23-26)
+
+```javascript
+// Load on init
+let todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+// Save on change
+function save() {
+  localStorage.setItem("todos", JSON.stringify(todos));
+  render();
+}
+```
+
+---
+
+### Minimal Vue Pattern
+
+```typescript
+import { ref, watch, onMounted } from 'vue';
+
+const STORAGE_KEY = 'todos';
+
+interface Todo {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+// Helper functions
+function loadTodos(): Todo[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+
+    const parsed = JSON.parse(stored);
+
+    // Validate structure
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed;
+  } catch (error) {
+    console.error('Failed to load todos:', error);
+    return [];
+  }
+}
+
+function saveTodos(todos: Todo[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.error('Storage quota exceeded');
+    } else {
+      console.error('Failed to save todos:', error);
+    }
+  }
+}
+
+// In component
+const todos = ref<Todo[]>([]);
+
+// Load on mount
+onMounted(() => {
+  todos.value = loadTodos();
+});
+
+// Save whenever todos change
+watch(todos, (newTodos) => {
+  saveTodos(newTodos);
+}, { deep: true });  // deep: true watches nested changes
+```
+
+**Key Points:**
+- `watch()` automatically syncs to localStorage on any change
+- `deep: true` is crucial for detecting array/object mutations
+- Load in `onMounted()` to avoid SSR issues
+
+---
+
+### React Pattern with localStorage
+
+```typescript
+import { useState, useEffect } from 'react';
+
+const STORAGE_KEY = 'todos';
+
+interface Todo {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+// Helper functions (same as Vue)
+function loadTodos(): Todo[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed;
+  } catch (error) {
+    console.error('Failed to load todos:', error);
+    return [];
+  }
+}
+
+function saveTodos(todos: Todo[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.error('Storage quota exceeded');
+    } else {
+      console.error('Failed to save todos:', error);
+    }
+  }
+}
+
+// In component
+function App() {
+  // Initialize from localStorage
+  const [todos, setTodos] = useState<Todo[]>(() => loadTodos());
+
+  // Save whenever todos change
+  useEffect(() => {
+    saveTodos(todos);
+  }, [todos]);
+
+  // ... rest of component
+}
+```
+
+**Key Points:**
+- **Lazy initialization** - `useState(() => loadTodos())` only runs once
+- Effect with `[todos]` dependency saves on every change
+- Load happens during initial render (before first paint)
+
+---
+
+### Critical Considerations
+
+#### 1. Error Handling
+
+**Always wrap localStorage access in try-catch:**
+
+```typescript
+// DON'T - crashes if localStorage disabled/full
+const data = JSON.parse(localStorage.getItem('key')!);
+
+// DO - graceful degradation
+try {
+  const stored = localStorage.getItem('key');
+  const data = stored ? JSON.parse(stored) : defaultValue;
+} catch (error) {
+  // Handle QuotaExceededError, SecurityError, etc.
+  return defaultValue;
+}
+```
+
+**Common errors:**
+- `SecurityError` - localStorage disabled (private browsing, browser settings)
+- `QuotaExceededError` - storage quota exceeded (typically 5-10MB)
+- `SyntaxError` - invalid JSON in storage (corrupted data)
+- `null` - key doesn't exist (not an error, but handle it)
+
+#### 2. Data Validation
+
+**Never trust localStorage data:**
+
+```typescript
+function loadTodos(): Todo[] {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    // Validate type
+    if (!Array.isArray(parsed)) {
+      console.warn('Invalid todos format, resetting');
+      return [];
+    }
+
+    // Validate structure (optional but recommended)
+    return parsed.filter(todo =>
+      todo &&
+      typeof todo.id === 'number' &&
+      typeof todo.title === 'string' &&
+      typeof todo.completed === 'boolean'
+    );
+  } catch {
+    return [];
+  }
+}
+```
+
+**Why?** Users can:
+- Manually edit localStorage in DevTools
+- Restore old backups with incompatible schema
+- Have corrupted data from browser crashes
+
+#### 3. SSR Considerations (Vue/React)
+
+**localStorage doesn't exist on server:**
+
+```typescript
+// Vue
+onMounted(() => {
+  // Only runs in browser
+  todos.value = loadTodos();
+});
+
+// React
+useEffect(() => {
+  // Only runs in browser
+  setTodos(loadTodos());
+}, []);
+
+// OR lazy initialization (React)
+const [todos, setTodos] = useState<Todo[]>(() => {
+  // Only runs in browser during hydration
+  if (typeof window === 'undefined') return [];
+  return loadTodos();
+});
+```
+
+**Never access localStorage at module level:**
+
+```typescript
+// BAD - crashes during SSR
+const initialTodos = JSON.parse(localStorage.getItem('todos') || '[]');
+
+// GOOD - inside effect/onMounted
+useEffect(() => {
+  const stored = localStorage.getItem('todos');
+  // ...
+}, []);
+```
+
+#### 4. Performance Optimization
+
+**Debounce rapid saves:**
+
+```typescript
+// Vue - debounced watch
+import { watchDebounced } from '@vueuse/core';
+
+watchDebounced(
+  todos,
+  (newTodos) => saveTodos(newTodos),
+  { debounce: 500, deep: true }
+);
+
+// React - debounced effect
+import { useEffect, useRef } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState<Todo[]>(() => loadTodos());
+  const timeoutRef = useRef<number>();
+
+  useEffect(() => {
+    // Clear previous timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Save after 500ms of no changes
+    timeoutRef.current = window.setTimeout(() => {
+      saveTodos(todos);
+    }, 500);
+
+    // Cleanup
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [todos]);
+}
+```
+
+**When to debounce:**
+- User typing in input (rapid state changes)
+- Large data structures
+- Frequent updates
+
+**When NOT to debounce:**
+- Deleting items (user expects immediate save)
+- Toggle actions (single change)
+- Small datasets
+
+#### 5. Sync Across Tabs
+
+**React to storage changes in other tabs:**
+
+```typescript
+// Vue
+import { onMounted, onUnmounted } from 'vue';
+
+onMounted(() => {
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        todos.value = JSON.parse(e.newValue);
+      } catch {
+        // Ignore invalid data
+      }
+    }
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+
+  onUnmounted(() => {
+    window.removeEventListener('storage', handleStorageChange);
+  });
+});
+
+// React
+useEffect(() => {
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        setTodos(JSON.parse(e.newValue));
+      } catch {
+        // Ignore invalid data
+      }
+    }
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
+}, []);
+```
+
+**Note:** `storage` event only fires in OTHER tabs, not the current tab.
+
+#### 6. Schema Versioning
+
+**Handle breaking changes:**
+
+```typescript
+interface StoredData {
+  version: number;
+  todos: Todo[];
+}
+
+const CURRENT_VERSION = 2;
+
+function loadTodos(): Todo[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+
+    const data = JSON.parse(stored) as StoredData;
+
+    // Migrate old versions
+    if (!data.version || data.version < CURRENT_VERSION) {
+      return migrateTodos(data);
+    }
+
+    return data.todos;
+  } catch {
+    return [];
+  }
+}
+
+function saveTodos(todos: Todo[]): void {
+  const data: StoredData = {
+    version: CURRENT_VERSION,
+    todos
+  };
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Save failed:', error);
+  }
+}
+
+function migrateTodos(oldData: any): Todo[] {
+  // Handle v1 -> v2 migration
+  if (Array.isArray(oldData)) {
+    // Old format was just array
+    return oldData;
+  }
+
+  return [];
+}
+```
+
+#### 7. Testing Considerations
+
+**Mock localStorage in tests:**
+
+```typescript
+// Test setup
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    clear: () => {
+      store = {};
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    }
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock
+});
+
+// Reset between tests
+beforeEach(() => {
+  localStorageMock.clear();
+});
+```
+
+---
+
+### Custom Hook Pattern (React)
+
+**Reusable localStorage hook:**
+
+```typescript
+function useLocalStorage<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((prev: T) => T)) => void] {
+
+  const [state, setState] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
+
+  const setValue = (value: T | ((prev: T) => T)) => {
+    try {
+      // Support functional updates
+      const valueToStore = value instanceof Function ? value(state) : value;
+
+      setState(valueToStore);
+      localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(`Failed to save ${key}:`, error);
+    }
+  };
+
+  return [state, setValue];
+}
+
+// Usage
+function App() {
+  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', []);
+
+  // Use like normal useState
+  setTodos([...todos, newTodo]);
+}
+```
+
+### Composable Pattern (Vue)
+
+**Reusable localStorage composable:**
+
+```typescript
+import { ref, watch, Ref } from 'vue';
+
+export function useLocalStorage<T>(key: string, defaultValue: T): Ref<T> {
+  const data = ref<T>(defaultValue) as Ref<T>;
+
+  // Load from localStorage
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      data.value = JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error(`Failed to load ${key}:`, error);
+  }
+
+  // Save on changes
+  watch(
+    data,
+    (newValue) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(newValue));
+      } catch (error) {
+        console.error(`Failed to save ${key}:`, error);
+      }
+    },
+    { deep: true }
+  );
+
+  return data;
+}
+
+// Usage
+const todos = useLocalStorage<Todo[]>('todos', []);
+```
+
+---
+
+### Key Differences from Frameworkless
+
+| Concern | Frameworkless | Vue/React |
+|---------|---------------|-----------|
+| **When to load** | On script execution | `onMounted` / `useEffect` or lazy init |
+| **When to save** | Manual `save()` calls | Automatic via `watch` / `useEffect` |
+| **Error handling** | Optional | **Essential** (SSR, quota, disabled storage) |
+| **Validation** | Trust the data | **Always validate** |
+| **SSR** | N/A | Must guard against server rendering |
+| **Performance** | Save immediately | Consider debouncing |
+| **Reactivity** | Manual `render()` | Automatic from state changes |
+
+---
+
+### Quick Checklist for localStorage in Frameworks
+
+- [ ] Wrap all `localStorage` calls in try-catch
+- [ ] Validate data structure after loading
+- [ ] Handle `null` case (key doesn't exist)
+- [ ] Load in `onMounted` (Vue) or `useEffect`/lazy init (React)
+- [ ] Don't access `localStorage` at module level (SSR)
+- [ ] Consider debouncing frequent saves
+- [ ] Handle `QuotaExceededError` gracefully
+- [ ] Add schema versioning for production apps
+- [ ] Test with localStorage disabled
+- [ ] Consider cross-tab sync if needed
+
+The frameworks add complexity but provide critical benefits: automatic reactivity, SSR compatibility, and better error boundaries.
