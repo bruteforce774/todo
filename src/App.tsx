@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
+import './App.css'
 
 interface Todo {
     userId: number
@@ -26,20 +27,44 @@ useEffect(() => {
   fetchTodos();
 }, []);
 
-return (
-  <div>
-    <h1>Todos</h1>
-    {loading ? (
-      <div>Loading...</div>
-    ) : (
-      <ul>
-        {todos.map(todo => 
-          <li key={todo.id}>{todo.title}</li>
-        )}
-      </ul>
-    )}
-  </div>
-  )
+
+  const toggleTodo = (id: number) => {
+    setTodos((todos) =>
+      todos.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      )
+    );
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos((todos) => todos.filter((t) => t.id !== id));
+  };
+
+  return (
+    <div>
+      <h1>Todos</h1>
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <ul>
+          {todos.map((todo: Todo) => (
+            <li
+              key={todo.id}
+              className={todo.completed ? "completed" : ""}
+            >
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => toggleTodo(todo.id)}
+              />
+              {todo.title}
+              <button onClick={() => deleteTodo(todo.id)}>×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default App
