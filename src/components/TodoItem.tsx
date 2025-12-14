@@ -14,6 +14,7 @@ interface TodoItemProps {
             checked={todo.completed}
             onChange={() => onToggleTodo(todo.id)}
             />
+            { todo.title }
         </li>
     )  
  }
