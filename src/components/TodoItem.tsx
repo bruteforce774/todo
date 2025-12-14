@@ -19,3 +19,5 @@ interface TodoItemProps {
         </li>
     )  
  }
+
+ export default TodoItem
