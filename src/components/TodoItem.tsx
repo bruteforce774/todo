@@ -9,6 +9,11 @@ interface TodoItemProps {
  function TodoItem({ todo, onToggleTodo, onDeleteTodo }: TodoItemProps) {
     return (
         <li className={todo.completed ? 'completed' : ''}>
+            <input
+            type='checkbox'
+            checked={todo.completed}
+            onChange={() => onToggleTodo(todo.id)}
+            />
         </li>
     )  
  }
