@@ -1,7 +1,7 @@
 <script setup lang='ts'>
   import { ref, onMounted } from 'vue'
   import TodoForm from './components/TodoForm.vue'
-  import TodoItem from './components/TodoItem.vue'
+  import TodoList from './components/TodoList.vue'
   import type { Todo } from './types'
 
   const todos = ref<Todo[]>([])
@@ -9,7 +9,7 @@
 
   onMounted(async () => {
     try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/todos/')
+      const response = await fetch('https://jsonplaceholder.typicode.com/todos?_limit=10/')
       todos.value = await response.json() as Todo[]
     } catch (error) {
       console.error('Error fetching posts:', error)
@@ -45,20 +45,11 @@
   <TodoForm @add-todo='addTodo' />
   <div>
     <div v-if='loading'>Loading...</div>
-    <ul v-else>
-       <TodoItem 
-       v-for="todo in todos"
-       :key="todo.id"
-       :todo="todo"
-       @toggle-todo="toggleTodo"
-       @delete-todo="deleteTodo" 
-       />
-    </ul>
+    <TodoList 
+      v-else 
+      :todos='todos' 
+      @toggle-todo='toggleTodo' 
+      @delete-todo='deleteTodo'
+    />
   </div>
 </template>
-
-<style>
-    ul {
-    list-style-type: none;
-  }
-</style>
