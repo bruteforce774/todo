@@ -7,5 +7,8 @@ interface TodoItemProps {
  }
 
  function TodoItem({ todo, onToggleTodo, onDeleteTodo }: TodoItemProps) {
-    
+    return (
+        <li className={todo.completed ? 'completed' : ''}>
+        </li>
+    )  
  }
