@@ -1,7 +1,8 @@
-<script setup lang="ts">
-  import { ref, onMounted } from 'vue';
-  import TodoForm from './components/TodoForm.vue';
-  import type { Todo } from './types';
+<script setup lang='ts'>
+  import { ref, onMounted } from 'vue'
+  import TodoForm from './components/TodoForm.vue'
+  import TodoItem from './components/TodoItem.vue'
+  import type { Todo } from './types'
 
   const todos = ref<Todo[]>([])
   const loading = ref(true)
@@ -41,33 +42,18 @@
 
 <template>
   <h1>Todos</h1>
-  <TodoForm @add-todo="addTodo" />
+  <TodoForm @add-todo='addTodo' />
   <div>
-    <div v-if="loading">Loading...</div>
+    <div v-if='loading'>Loading...</div>
     <ul v-else>
       
-      <li 
-      v-for="todo in todos" 
-      :key="todo.id" 
-      :class="{ completed: todo.completed }">
-        
-      <input type="checkbox" 
-        :checked="todo.completed" 
-        @change="toggleTodo(todo.id)">
-        {{ todo.title }}
       
-        <button @click="deleteTodo(todo.id)">×</button>
-      
-      </li>
     </ul>
   </div>
 </template>
 
 <style>
-  ul {
+    ul {
     list-style-type: none;
-  }
-  .completed {
-    font-weight: bold;
   }
 </style>

@@ -1,5 +1,5 @@
-<script setup lang="ts">
-  import { ref } from 'vue';
+<script setup lang='ts'>
+  import { ref } from 'vue'
 
   const newTitle = ref('')
 
@@ -17,10 +17,10 @@
 
 <template>
   <div>
-    <form @submit="addTodo">
-      <label for="title">New Todo:</label>
-      <input v-model="newTitle" id="title" type="text" required />
-      <button type="submit">Add Todo</button>
+    <form @submit='addTodo'>
+      <label for='title'>New Todo:</label>
+      <input v-model='newTitle' id='title' type='text' required />
+      <button type='submit'>Add Todo</button>
     </form>
   </div>
 </template>
