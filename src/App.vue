@@ -31,6 +31,17 @@
   function deleteTodo(id: number) {
     todos.value = todos.value.filter(t => t.id !== id)
   }
+
+  function addTodo(userId: number, title: string) {
+    const length = todos.value.length
+    const newTodo: Todo = {
+      userId,
+      id: length ? (todos.value[length - 1]?.id ?? 0) + 1 : 1,
+      title,
+      completed: false
+  }
+    todos.value.push(newTodo)
+  }
 </script>
 
 <template>
