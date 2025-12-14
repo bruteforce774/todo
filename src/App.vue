@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
+  import TodoForm from './components/TodoForm.vue';
 
   interface Todo {
     userId: number
@@ -10,7 +11,6 @@
 
   const todos = ref<Todo[]>([])
   const loading = ref(true)
-  const newTitle = ref('')
 
   onMounted(async () => {
     try {
@@ -33,30 +33,21 @@
     todos.value = todos.value.filter(t => t.id !== id)
   }
 
-  function addTodo(event: Event) {
-    event.preventDefault()
-    if (!newTitle.value.trim()) return
+  function addTodo(title: string) {
     const length = todos.value.length
     const newTodo: Todo = {
       userId: 1,
       id: length ? (todos.value[length - 1]?.id ?? 0) + 1 : 1,
-      title: newTitle.value,
+      title,
       completed: false
     }
     todos.value.push(newTodo)
-    newTitle.value = ''
   }
 </script>
 
 <template>
   <h1>Todos</h1>
-  <div>
-    <form @submit="addTodo">
-      <label for="title">New Todo:</label>
-      <input v-model="newTitle" id="title" type="text" required />
-      <button type="submit">Add Todo</button>
-    </form>
-  </div>
+  <TodoForm @add-todo="addTodo" />
   <div>
     <div v-if="loading">Loading...</div>
     <ul v-else>
