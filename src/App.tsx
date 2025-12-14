@@ -29,7 +29,7 @@ useEffect(() => {
 
 
   const toggleTodo = (id: number) => {
-    setTodos((todos) =>
+    setTodos((todos: Todo[]) =>
       todos.map((t) =>
         t.id === id ? { ...t, completed: !t.completed } : t
       )
@@ -37,7 +37,7 @@ useEffect(() => {
   };
 
   const deleteTodo = (id: number) => {
-    setTodos((todos) => todos.filter((t) => t.id !== id));
+    setTodos((todos: Todo[]) => todos.filter((t) => t.id !== id));
   };
 
   return (
