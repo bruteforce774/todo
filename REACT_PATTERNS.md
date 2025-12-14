@@ -139,24 +139,35 @@ useEffect(() => {
 <button @click="emit('delete-todo', todo.id)">×</button>
 ```
 
-Call function directly with arguments.
+Child emits events to parent.
 
-### React Pattern
+### React Pattern (TodoItem.tsx)
 ```jsx
-<input onChange={() => emit('toggle-todo', todo.id)} />
-<button onClick={() => emit('delete-todo', todo.id)}>×</button>
+// Component receives callback props from parent
+function TodoItem({ todo, onToggleTodo, onDeleteTodo }) {
+  return (
+    <>
+      <input onChange={() => onToggleTodo(todo.id)} />
+      <button onClick={() => onDeleteTodo(todo.id)}>×</button>
+    </>
+  );
+}
 ```
+
+Child calls callback props passed from parent.
 
 **Arrow function wrapper required** when passing arguments.
 
 **Why?**
 ```jsx
 // DON'T - calls immediately during render!
-<button onClick={deleteTodo(todo.id)}>
+<button onClick={onDeleteTodo(todo.id)}>
 
 // DO - creates function to call later
-<button onClick={() => deleteTodo(todo.id)}>
+<button onClick={() => onDeleteTodo(todo.id)}>
 ```
+
+**Key Difference:** React has no `emit()`. Instead, parent passes callback functions as props, and child calls them directly.
 
 ---
 
@@ -206,21 +217,27 @@ JavaScript expressions - use ternary operator inside `{}`
 />
 ```
 
-Directive: `v-for` iterates, `:key` is attribute
+Directive: `v-for` iterates, `:key` is attribute. Child events bubble up via `emit`.
 
-### React Pattern
+### React Pattern (TodoList.tsx)
 ```jsx
-{todos.map((todo) => (
-  <TodoItem
-    key={todo.id}
-    todo={todo}
-    onToggleTodo={(id) => handleToggle(id)}
-    onDeleteTodo={(id) => handleDelete(id)}
-  />
-))}
+function TodoList({ todos, onToggleTodo, onDeleteTodo }) {
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <TodoItem
+          key={todo.id}
+          todo={todo}
+          onToggleTodo={onToggleTodo}
+          onDeleteTodo={onDeleteTodo}
+        />
+      ))}
+    </ul>
+  );
+}
 ```
 
-JavaScript `.map()` - transforms array to JSX elements
+JavaScript `.map()` - transforms array to JSX elements. Callback props are passed down to children.
 
 **Key Concepts:**
 - `.map()` returns array of JSX - React renders arrays automatically
@@ -248,34 +265,71 @@ const emit = defineEmits<{
   (e: 'add-todo', title: string): void
 }>()
 
-// In template
+// In template, child emits event
 emit('add-todo', newTitle.value)
 ```
 
+Vue: Parent listens with `@event-name`, child emits with `emit('event-name', data)`
+
 ### React Pattern
 
-**Parent:**
-```jsx
-<TodoForm onAddTodo={addTodo} />
-<TodoList
-  todos={todos}
-  onToggleTodo={toggleTodo}
-  onDeleteTodo={deleteTodo} />
+**Parent (App.tsx):**
+```tsx
+function App() {
+  const addTodo = (title: string) => {
+    // handle adding todo
+  };
+
+  const toggleTodo = (id: number) => {
+    // handle toggling
+  };
+
+  const deleteTodo = (id: number) => {
+    // handle deleting
+  };
+
+  return (
+    <>
+      <TodoForm onAddTodo={addTodo} />
+      <TodoList
+        todos={todos}
+        onToggleTodo={toggleTodo}
+        onDeleteTodo={deleteTodo}
+      />
+    </>
+  );
+}
 ```
 
-**Child:**
-```typescript
+**Child (TodoForm.tsx):**
+```tsx
 interface Props {
   onAddTodo: (title: string) => void;
 }
 
 function TodoForm({ onAddTodo }: Props) {
-  // ...
-  onAddTodo(newTitle);
+  const [text, setText] = useState("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    onAddTodo(text);  // Call the callback prop
+    setText("");
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={text} onChange={(e) => setText(e.target.value)} />
+      <button type="submit">Add</button>
+    </form>
+  );
 }
 ```
 
-**Key Difference:** React passes callbacks as props, Vue uses events.
+React: Parent passes functions as props, child calls them directly.
+
+**Key Difference:**
+- **Vue:** Child emits events (`emit('event-name', data)`), parent listens (`@event-name`)
+- **React:** Parent passes callback functions as props, child calls them (`onCallback(data)`)
 
 ---
 
