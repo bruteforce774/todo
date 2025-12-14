@@ -46,8 +46,13 @@
   <div>
     <div v-if='loading'>Loading...</div>
     <ul v-else>
-      
-      
+       <TodoItem 
+       v-for="todo in todos"
+       :key="todo.id"
+       :todo="todo"
+       @toggle-todo="toggleTodo"
+       @delete-todo="deleteTodo" 
+       />
     </ul>
   </div>
 </template>
