@@ -15,6 +15,7 @@ interface TodoItemProps {
             onChange={() => onToggleTodo(todo.id)}
             />
             { todo.title }
+            <button onClick={() => onDeleteTodo(todo.id)}>Delete</button>
         </li>
     )  
  }
