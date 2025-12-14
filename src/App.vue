@@ -10,6 +10,7 @@
 
   const todos = ref<Todo[]>([])
   const loading = ref(true)
+  const newTitle = ref('')
 
   onMounted(async () => {
     try {
@@ -32,21 +33,31 @@
     todos.value = todos.value.filter(t => t.id !== id)
   }
 
-  function addTodo(userId: number, title: string) {
+  function addTodo(event: Event) {
+    event.preventDefault()
+    if (!newTitle.value.trim()) return
     const length = todos.value.length
     const newTodo: Todo = {
-      userId,
+      userId: 1,
       id: length ? (todos.value[length - 1]?.id ?? 0) + 1 : 1,
-      title,
+      title: newTitle.value,
       completed: false
-  }
+    }
     todos.value.push(newTodo)
+    newTitle.value = ''
   }
 </script>
 
 <template>
+  <h1>Todos</h1>
   <div>
-    <h1>Todos</h1>
+    <form @submit="addTodo">
+      <label for="title">New Todo:</label>
+      <input v-model="newTitle" id="title" type="text" required />
+      <button type="submit">Add Todo</button>
+    </form>
+  </div>
+  <div>
     <div v-if="loading">Loading...</div>
     <ul v-else>
       
