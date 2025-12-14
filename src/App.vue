@@ -1,13 +1,7 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import TodoForm from './components/TodoForm.vue';
-
-  interface Todo {
-    userId: number
-    id: number
-    title: string
-    completed: boolean
-  }
+  import type { Todo } from './types';
 
   const todos = ref<Todo[]>([])
   const loading = ref(true)
