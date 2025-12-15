@@ -24,7 +24,7 @@ function App() {
     };
     fetchTodos();
   }, []);
-  
+
   const toggleTodo = (id: number) => {
     setTodos((todos) =>
       todos.map((t) =>
@@ -32,6 +32,10 @@ function App() {
       )
     );
   };
+
+  const deleteTodo = (id: number) => {
+    setTodos((todos) => todos.filter((t) => t.id !== id));
+  }
 }
 
 export default App;
