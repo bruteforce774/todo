@@ -24,6 +24,14 @@ function App() {
     };
     fetchTodos();
   }, []);
+  
+  const toggleTodo = (id: number) => {
+    setTodos((todos) =>
+      todos.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      )
+    );
+  };
 }
 
 export default App;
