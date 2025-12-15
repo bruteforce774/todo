@@ -36,6 +36,18 @@ function App() {
   const deleteTodo = (id: number) => {
     setTodos((todos) => todos.filter((t) => t.id !== id));
   }
+
+   const addTodo = (title: string) => {
+      const length = todos.length
+      const newTodo: Todo = {
+        userId: 1,
+        id: length ? (todos[length - 1]?.id ?? 0) + 1 : 1,
+        title,
+        completed: false,
+      }
+      setTodos((todos) => [...todos, newTodo])
+    }
+
 }
 
 export default App;
