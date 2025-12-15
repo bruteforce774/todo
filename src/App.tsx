@@ -48,6 +48,21 @@ function App() {
       setTodos((todos) => [...todos, newTodo])
     }
 
+    return (
+      <>
+        <h1>Todos</h1>
+        <TodoForm onAddTodo={addTodo} />
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <TodoList
+            todos={todos}
+            onToggleTodo={toggleTodo}
+            onDeleteTodo={deleteTodo}
+          />
+        )}
+      </>
+    )
 }
 
 export default App;
